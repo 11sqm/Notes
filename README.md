@@ -5,3 +5,4 @@
 
 ## 二、目录
 1. [Makefile笔记](Makefile/Makefile笔记.md)
+2. [Verilog语法](Verilog/Verilog语法.md)
