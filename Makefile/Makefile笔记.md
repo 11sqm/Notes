@@ -237,3 +237,78 @@ objects := $(wildcards *.o)
 ```
 
 ### 3. 文件搜寻
+对于存放在不同路径的源文件，当 `make` 去寻找文件的依赖关系时，可以在文件前加上路径，但最好的方法是将一个路径告诉 `make` ，让 `make` 自动去寻找。
+
+Makefile文件中特殊变量 `VPATH` 可以完成这个功能。定义该变量后，`make` 在当前目录找不到的情况下，则会到指定的目录中去寻找文件。
+```Makefile
+VPATH = src:../headers
+```
+如上例所示，`make` 将会按照"src"和"../headers"顺序进行搜索，目录由 `:` 进行分隔。当然，当前目录永远是最高优先搜索的地方。
+
+除此以外，还可以使用 `vpath` 关键字，这不是变量而是一个 `make` 关键字，可以指定不同文件在不同搜索目录中。使用方法有三种：
+1. 为符合模式 `<pattern>` 的文件指定搜索目录`<directories>`。
+```Makefile
+vpath <pattern> <directories>
+```
+2. 清除符合模式 `<pattern>` 的文件的搜索目录。
+```Makefile
+vpath <pattern>
+```
+3. 清除所有已被设置好了的文件搜索目录。
+```Makefile
+vpath
+```
+vpath中的 `<pattern>` 需要包含 `%` 字符。`%` 字符意思是匹配若干字符。例如`%.h` 表示所有以 `.h` 结尾的文件。`<pattern>` 指定了要搜索的文件集，而 `<directories>` 指定 `<pattern>` 的文件集的搜索目录。
+
+```Makefile
+vpath %.h ../headers
+```
+在上例中要求make在“../headers”目录下搜索所有以 `.h` 结尾的文件。
+
+可以连续使用vpath语句，以指定不同搜索策略。如果连续vpath语句中出现相同或重复的 `<pattern>` ，则按照语句先后顺序进行搜索。
+```Makefile
+vpath %.c foo:bar
+vpath %   blish
+```
+
+### 4. 伪目标
+```Makefile
+clean:
+    rm *.o temp
+```
+在上例中，我们并不生成"clean"这个文件。“伪目标”并非一个文件，只是一个标签，所以make无法生成它的依赖关系和决定它是否要执行，只有通过显式地指明这个“目标”才能让其生效。“伪目标”取名不能和文件名重合，否则失去“伪目标“的意义了。
+
+为了避免和文件重名的这种情况，我们可以使用一个特殊的标记“.PHONY”来显式地指明一个目标是“伪目标”，向make说明，不管是否有这个文件，这个目标就是“伪目标”。
+
+伪目标一般没有依赖的文件。但是，我们也可以为伪目标指定所依赖的文件。伪目标同样可以作为“默认目标”，只要将其放在第一个。
+```Makefile
+all : prog1 prog2 prog3
+.PHONY : all
+
+prog1 : prog1.o utils.o
+    cc -o prog1 prog1.o utils.o
+
+prog2 : prog2.o
+    cc -o prog2 prog2.o
+
+prog3 : prog3.o sort.o utils.o
+    cc -o prog3 prog3.o sort.o utils.o
+```
+上例中声明了一个"all"的伪目标，依赖于其他三个目标。Makefile中的第一个目标会被作为其默认目标。由于默认目标的特性是，总是被执行的，但由于“all”又是一个伪目标，伪目标只是一个标签不会生成文件，所以不会有“all”文件产生。于是，其它三个目标的规则总是会被决议。也就达到了我们一口气生成多个目标的目的。 
+
+此外，上例表明，目标可以成为依赖。同理，伪目标同样也可成为依赖。
+```Makefile
+.PHONY : cleanall cleanobj cleandiff
+
+cleanall : cleanobj cleandiff
+    rm program
+
+cleanobj :
+    rm *.o
+
+cleandiff :
+    rm *.diff
+```
+“make cleanall”将清除所有要被清除的文件。“cleanobj”和“cleandiff”这两个伪目标类似“子程序”的意思。我们可以输入“make cleanall”和“make cleanobj”和“make cleandiff”命令来达到清除不同种类文件的目的。
+
+### 5. 多目标
