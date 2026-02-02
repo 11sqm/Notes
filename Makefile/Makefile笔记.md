@@ -312,3 +312,61 @@ cleandiff :
 “make cleanall”将清除所有要被清除的文件。“cleanobj”和“cleandiff”这两个伪目标类似“子程序”的意思。我们可以输入“make cleanall”和“make cleanobj”和“make cleandiff”命令来达到清除不同种类文件的目的。
 
 ### 5. 多目标
+Makefile的规则中的目标可以不止一个，其支持多目标，有可能我们的多个目标同时依赖于一个文件，并且其生成的命令大体类似。于是我们就能把其合并起来。当然，多个目标的生成规则的执行命令不是同一个，通过使用自动化变量 `$@` 表示目前规则中所有的目标的集合。
+```Makefile
+bigoutput littleoutput : text.g
+    generate text.g -$(subst output,,$@) > $@
+```
+上述规则等价于：
+```Makefile
+bigoutput : text.g
+    generate text.g -big > bigoutput
+littleoutput : text.g
+    generate text.g -little > littleoutput
+```
+其中，`-$(subst output,,$@)` 中的 `$` 表示执行一个Makefile的函数，函数名为subst，后面的为参数。这里的这个函数是替换字符串的意思， `$@` 表示目标的集合，就像一个数组， `$@` 依次取出目标，并执于命令。
+
+### 6. 静态模式
+静态模式可以更加容易地定义多目标的规则，可以让我们的规则变得更加有弹性和灵活，语法如下：
+```Makefile
+<targets ...> : <target-pattern> : <prereq-patterns ...>
+    <commands>
+    ...
+```
+1. targets定义了一系列的目标文件，可以有通配符。是目标的一个集合。
+2. target-pattern是指明了targets的模式，也就是目标集的模式。
+3. prereq-patterns是目标的依赖模式，它对target-pattern形成的模式再进行一次依赖目标的定义。
+
+如果我们的`<target-pattern>`定义成 `%.o` ，意思是我们的 `<target>` 集合中都是以 `.o` 结尾的，而如果我们的 `<prereq-patterns>` 定义成 `%.c` ，意思是对 `<target-pattern>` 所形成的目标集进行二次定义，其计算方法是，取 `<target-pattern>` 模式中的 `%` （也就是去掉了 `.o` 这个结尾），并为其加上 `.c` 这个结尾，形成的新集合。
+
+所以，我们的“目标模式”或是“依赖模式”中都应该有 `%` 这个字符，如果你的文件名中有 `%` 那么你可以使用反斜杠 `\` 进行转义，来标明真实的 `%` 字符。
+
+```Makefile
+objects = foo.o bar.o
+
+all: $(objects)
+
+$(objects): %.o: %.c
+    $(CC) -c $(CFLAGS) $< -o $@
+```
+
+上面的例子中，指明了我们的目标从`$(object)`中获取， `%.o` 表明要所有以 `.o` 结尾的目标，也就是 `foo.o bar.o` ，也就是变量 `$object` 集合的模式，而依赖模式 %.c 则取模式 `%.o` 的 `%` ，也就是 `foo bar` ，并为其加下 `.c` 的后缀，于是，我们的依赖目标就是 `foo.c bar.c` 。而命令中的 `$<` 和 `$@` 则是自动化变量， `$<` 表示第一个依赖文件， `$@` 表示目标集（也就是“foo.o bar.o”）。于是，上面的规则展开后等价于下面的规则：
+
+```Makefile
+foo.o : foo.c
+    $(CC) -c $(CFLAGS) foo.c -o foo.o
+bar.o : bar.c
+    $(CC) -c $(CFLAGS) bar.c -o bar.o
+```
+
+“静态模式规则”的用法很灵活，如果用得好，那会是一个很强大的功能。参考下例，其中`$(filter %.o,$(files))`表示调用Makefile的filter函数，过滤“$files”集，只要其中模式为“%.o”的内容。：
+```Makefile
+files = foo.elc bar.o lose.o
+
+$(filter %.o,$(files)): %.o: %.c
+    $(CC) -c $(CFLAGS) $< -o $@
+$(filter %.elc,$(files)): %.elc: %.el
+    emacs -f batch-byte-compile $<
+```
+
+### 7. 自动生成依赖性
