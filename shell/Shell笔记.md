@@ -60,5 +60,5 @@ hello
 $ sudo find -L /sys/class/backlight -maxdepth 2 -name '*brightness*'
 /sys/class/backlight/thinkpad_screen/brightness
 $ cd /sys/class/backlight/thinkpad_screen
-$ echo 3 > sudo tee brightness
+$ echo 3 | sudo tee brightness
 ```
