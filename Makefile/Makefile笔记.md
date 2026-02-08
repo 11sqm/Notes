@@ -460,3 +460,65 @@ clean :
 make中还有参数 `-k` 或 `--keep-going` ，含义是如果规则中的命令出错了，则终止该规则的执行，但继续执行其他规则。
 
 ### 4. 嵌套执行make
+在一些大工程中会把不同模块或是不同功能的源文件放在不同的目录中，我们可以在每个目录中都书写一个该目录的Makefile，从而使Makefile变得更加简洁。
+
+例如，我们有一个子目录叫subdir，这个目录下有个Makefile文件，来指明了这个目录下文件的编译规则。那么我们总控的Makefile可以这样书写：
+```Makefile
+subsystem :
+    cd subdir && $(MAKE)
+```
+其等价于：
+```Makefile
+subsystem :
+    $(MAKE) -c subdir
+```
+
+此Makefile为“总控Makefile”，总控Makefile的变量可以传递到下级Makefile中，但是不会覆盖下层Makefile中所定义的变量，除非指定 `-e` 参数。
+
+对于要传递到下级Makefile变量，其声明为：
+```Makefile
+export <varible ...>
+```
+对于不想传递到下级Makefile变量，其声明为：
+```Makefile
+unexport <varible ...>
+```
+如果要传递所有变量，则只要一个export即可，后面什么都不用加，表示传递所有变量。
+
+需要注意的是，有两个变量，一个是 `SHELL` ，一个是 `MAKEFLAGS` ，这两个变量不管你是否export，其总是要传递到下层 Makefile中，特别是 `MAKEFLAGS` 变量，其中包含了make的参数信息，如果我们执行“总控Makefile”时有make参数或是在上层 Makefile中定义了这个变量，那么 `MAKEFLAGS` 变量将会是这些参数，并会传递到下层Makefile中，这是一个系统级的环境变量。
+
+但是make命令中的有几个参数并不往下传递，它们是 `-C`, `-f`, `-h`, `-o` 和 `-W` ，如果不想往下层传递参数，则可以：
+```Makefile
+subsystem:
+    cd subdir && $(MAKE) MAKEFLAGS=
+```
+
+对于定义了环境变量 `MAKEFLAGS` ，则应当确保其中的选项后续都会用到，如果其中有 `-t`，`-n` 和 `-q` 参数，则可能有意料之外的结果。
+
+在嵌套执行中，`-w` 或 `--print-directory` 可以在make过程中输出信息，显示目前的工作目录。比如，如果我们的下级make目录是“/home/hchen/gnu/make”，如果我们使用 `make -w` 来执行，那么当进入该目录时，我们会看到:
+```Makefile
+make: Entering directory `/home/hchen/gnu/make'.
+```
+而在完成下层make后离开目录时，我们会看到:
+```Makefile
+make: Leaving directory `/home/hchen/gnu/make'
+```
+
+当你使用 `-C` 参数来指定make下层Makefile时， `-w` 会被自动打开的。如果参数中有 `-s` （ `--slient` ）或是 `--no-print-directory` ，那么， `-w` 总是失效的。
+
+### 5. 定义命令包
+如果Makefile中出现一些相同命令序列，则可以为这些相同的命令序列定义一个变量。定义这种命令序列的语法以 `define` 开始，以 `endef` 结束，如：
+```Makefile
+define run-yacc
+yacc $(firstword $^)
+mv y.tab.c $@
+endef
+```
+这里，“run-yacc”是这个命令包的名字，其不要和Makefile中的变量重名。在 `define` 和 `endef` 中的两行就是命令序列。这个命令包中的第一个命令是运行Yacc程序，因为Yacc程序总是生成“y.tab.c”的文件，所以第二行的命令就是把这个文件改改名字。其使用如下：
+```Makefile
+foo.c : foo.y
+    $(run-yacc)
+```
+此处 `$^` 就是 `foo.y`。
+
+## 五、使用变量
