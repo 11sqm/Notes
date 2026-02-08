@@ -62,3 +62,9 @@ $ sudo find -L /sys/class/backlight -maxdepth 2 -name '*brightness*'
 $ cd /sys/class/backlight/thinkpad_screen
 $ echo 3 | sudo tee brightness
 ```
+
+### 5. shell脚本
+大多数shell都有自己的一套脚本语言，包括变量、控制流和自己的语法。shell脚本与其他脚本语言不同之处在于，shell脚本针对shell所从事的相关工作进行了优化。
+
+bash中为变量赋值的语法是 `foo=bar`，访问变量中存储的数值，其语法为 `$foo`。需要注意的是，`foo = bar` 是不能正确工作的，因为解释器会调用程序 `foo` 并将 `=` 和 `bar` 作为参数。总的来说，在shell脚本中使用空格会起到分割参数的作用，有时候可能会造成混淆。
+
