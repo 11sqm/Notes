@@ -545,7 +545,7 @@ $(objects) : defs.h
 1. 使用 `=`，在 `=` 左侧是变量，右侧是变量的值，右侧变量的值可以定义在文件的任何一处，也就是说右侧中的变量不一定是已定义好的值，也可以使用后面定义的值，如：
     ```Makefile
     foo = $(bar)
-        bar = $(ugh)
+    bar = $(ugh)
     ugh = Huh?
 
     all:
@@ -586,3 +586,71 @@ dir := /foo/bar    # directory to put the frobs in
 FOO ?= bar
 ```
 其含义使如果FOO未被定义，则变量FOO的值就是“bar”，如果FOO先前被定义过，则什么也不做。
+
+### 3. 变量高级用法
+#### (1) 变量值的替换
+我们可以替换变量中共有部分，格式为 `$(var:a=b)` 或是 `${var:a=b}` ，含义是将变量“var”中所有以“a”字串借位的“a”替换为“b”字串。此处“结尾”含义使“空格”或“结束符”。
+
+```Makefile
+foo := a.o b.o c.o
+bar := $(foo:.o=.c)
+```
+上例中先定义了一个 `$(foo)` 变量，第二行含义是将 `$(foo)` 中所有以 `.o` 字串借位替换为 `.c`。
+
+另外一种变量替换级数是以静态模式定义的，如：
+```Makefile
+foo := a.o b.o c.o
+bar := $(foo:%.o=%.c)
+```
+这依赖于被替换字串中有相同模式，模式中必须包含 `%` 字符。
+
+#### (2) 将变量值再作为变量
+```Makefile
+x = y
+y = z
+a := $($(x))
+```
+上例中，`$(x)` 的值是y，所以 `$($(x))` 等价于 `$(y)` ，于是 `$(a)` 的值就是z。
+
+此外，可以在定义中加入函数，如下例所示：
+```Makefile
+x = variable1
+variable2 := Hello
+y = $(subst 1,2,$(x))
+z = y
+a := $($($(z)))
+```
+`$($($(z)))` 扩展为 `$($(y))` ，而其再次被扩展为 `$($(subst 1,2,$(x)))`。`$(x)` 的值是“variable1”，subst函数把“variable1”中的所有“1”字串替换成“2”字串，于是，“variable1”变成 “variable2”，再取其值，所以，最终， `$(a)` 的值就是 `$(variable2)` 的值——“Hello”。
+
+在这种方式中，可以使用多个变量来组成一个变量的名字，然后再取其值：
+```Makefile
+first_second = Hello
+a = first
+b = second
+all = $($a_$b)
+```
+这里的 `$a_$b` 组成了“first_second”，于是，`$(all)` 的值就是“Hello”。
+
+此外，此技术和函数与条件语句可以一同使用
+```Makefile
+ifdef do_sort
+    func := sort
+else
+    func := strip
+endif
+
+bar := a d b g q c
+
+foo := $($(func) $(bar))
+```
+这个示例中，如果定义了“do_sort”，那么： `foo := $(sort a d b g q c)`，于是 `$(foo)` 的值就是 “a b c d g q”，而如果没有定义“do_sort”，那么： `foo := $(strip a d b g q c)`，调用的就是strip函数。
+
+### 4. 追加变量值
+可以使用 `+=` 操作符给变量追加值，如：
+```Makefile
+objects = main.o foo.o bar.o utils.o
+objects += another.o
+```
+此时 `$(objects)` 变为“main.o foo.o bar.o utils.o another.o”。
+
+如果之前没有定义过，则 `+=` 会自动变成 `=`，如果前面有变量定义，则会继承前次操作的赋值符。如果前一次的是 `:=` ，那么 `+=` 会以 `:=` 作为其赋值符。对于前次的赋值符是 `=`，并不会发生递归定义，make会自动解决该问题。
