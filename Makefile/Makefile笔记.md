@@ -473,7 +473,7 @@ subsystem :
     $(MAKE) -c subdir
 ```
 
-此Makefile为“总控Makefile”，总控Makefile的变量可以传递到下级Makefile中，但是不会覆盖下层Makefile中所定义的变量，除非指定 `-e` 参数。
+此Makefile为“总控Makefile”，总控Makefile的变量可以传递到下级Makefile中，但是不会覆盖下层Makefile中所定义的变量，除非指定 `-e` 参数。默认情况下，只有通过命令行设置的变量会被传递。
 
 对于要传递到下级Makefile变量，其声明为：
 ```Makefile
@@ -654,3 +654,41 @@ objects += another.o
 此时 `$(objects)` 变为“main.o foo.o bar.o utils.o another.o”。
 
 如果之前没有定义过，则 `+=` 会自动变成 `=`，如果前面有变量定义，则会继承前次操作的赋值符。如果前一次的是 `:=` ，那么 `+=` 会以 `:=` 作为其赋值符。对于前次的赋值符是 `=`，并不会发生递归定义，make会自动解决该问题。
+
+### 5. override指令
+如果有变量是通过make的命令行参数设置的，那么Makefile文件中对这个变量的赋值会被忽略。如果想在Makefile文件中设置参数的值，需要使用 `override` 指令，其语法是：
+```Makefile
+override <variable>; = <value>;
+override <variable>; := <value>;
+override <variable>; += <more text>;
+```
+对于多行的变量定义，使用define指令，在define指令前，同样可以使用override指令，如：
+```Makefile
+override define foo
+bar
+endef
+```
+
+### 6. 多行变量
+还有一种设置变量值的方法是使用define关键字。使用define关键字设置变量的值可以有换行，这有利于定义一系列的命令。
+
+define指令后面跟的是变量的名字，而重起一行定义变量的值，定义是以endef 关键字结束。其工作方式和“=”操作符一样。变量的值可以包含函数、命令、文字，或是其它变量。由于命令需要以 `Tab` 键开头，所以如果define定义的命令变量没有以 `Tab` 键开头，则make不会将其认为是命令。
+```Makefile
+NAME = Makefile
+
+override define MIX_VAR
+@echo "Hello, $(NAME)!"  # 引用其他变量
+@echo "当前目录：$(shell pwd)"  # 调用shell函数
+@echo "这是多行命令的第三行"
+endef
+
+all:
+    $(MIX_VAR)
+```
+
+### 7. 环境变量
+make运行时系统环境变量可以在make开始运行时被载入Maefile文件中，但是如果Makefile中已经定义了这个变量，或这个变量由mak命令行带入，那么系统环境变量的值将被覆盖，除非make指定“-e”参数使系统环境变量覆盖Makefile中定义的变量。
+
+如果在环境变量中设置了 `CFLAGS` 环境变量，则可以在所有的Makefile中使用这个变量，这对于使用统一的编译参数有较大好处。如果Makefile中定义了 `CFLAGS`，那么则会使用Makefile中的这个变量，如果没有定义则使用系统环境变量的值。
+
+当make嵌套调用时，上层Makefile中定义的变量会以系统环境变量的方式传递到下层Makefile中，默认情况下，只有通过命令行设置的变量会被传递。而定义在文件中的变量，如果要向下层Makefile传递，则需要使用export关键字来声明。而定义在文件中的变量，如果要向下层Makefile传递，则需要使用export关键字来声明，具体参考前文嵌套执行make章节。
