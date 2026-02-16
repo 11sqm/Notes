@@ -658,9 +658,9 @@ objects += another.o
 ### 5. override指令
 如果有变量是通过make的命令行参数设置的，那么Makefile文件中对这个变量的赋值会被忽略。如果想在Makefile文件中设置参数的值，需要使用 `override` 指令，其语法是：
 ```Makefile
-override <variable>; = <value>;
-override <variable>; := <value>;
-override <variable>; += <more text>;
+override <variable> = <value>;
+override <variable> := <value>;
+override <variable> += <more text>;
 ```
 对于多行的变量定义，使用define指令，在define指令前，同样可以使用override指令，如：
 ```Makefile
@@ -692,3 +692,140 @@ make运行时系统环境变量可以在make开始运行时被载入Maefile文�
 如果在环境变量中设置了 `CFLAGS` 环境变量，则可以在所有的Makefile中使用这个变量，这对于使用统一的编译参数有较大好处。如果Makefile中定义了 `CFLAGS`，那么则会使用Makefile中的这个变量，如果没有定义则使用系统环境变量的值。
 
 当make嵌套调用时，上层Makefile中定义的变量会以系统环境变量的方式传递到下层Makefile中，默认情况下，只有通过命令行设置的变量会被传递。而定义在文件中的变量，如果要向下层Makefile传递，则需要使用export关键字来声明。而定义在文件中的变量，如果要向下层Makefile传递，则需要使用export关键字来声明，具体参考前文嵌套执行make章节。
+
+### 8. 目标变量
+之前所介绍的在Makefile中定义的变量均为**全局变量**，在整个文件中都可以访问。当然，自动化变量除外，对于如 `$<` 等自动化变量属于**规则型变量**，其值依赖于规则的目标与依赖目标定义。
+
+此外，也可以为某个目标设置局部变量（Target-specific Variable），其可以与全局变量同名，作用范围只限于这条规则及连带规则中，其值有只在作用范围内有效，而不会影响链以外全局变量的值。其语法如下：
+```Makefile
+<target ...> : <variable-assignment>
+
+<target ...> : override <variable-assignment>
+```
+
+`<variable-assignment>` 可以是前面讲过的各种赋值表达式，如 `=` 、 `:=` 、 `+=` 或是 `?=` 。第二个语法是针对于make命令行带入的变量，或是系统环境变量。当设置该变量，则这个变量会作用到这个目标所引发的所有规则中去。
+
+```Makefile
+prog : CFLAGS = -g
+prog : prog.o foo.o bar.o
+    $(CC) $(CFLAGS) prog.o foo.o bar.o
+
+prog.o : prog.c
+    $(CC) $(CFLAGS) prog.c
+
+foo.o : foo.c
+    $(CC) $(CFLAGS) foo.c
+
+bar.o : bar.c
+    $(CC) $(CFLAGS) bar.c
+```
+在这个示例中，不管全局的 `$(CFLAGS)` 的值是什么，在prog目标，以及其所引发的所有规则中（prog.o foo.o bar.o的规则）， `$(CFLAGS)` 的值都是 `-g`。
+
+### 9. 模式变量
+在make中，支持模式变量（Pattern-specific Variable）。模式变量支持给定一种模式，将变量定义在符合这种模式的所有目标上。
+
+如下所示，可以给所有 `.o` 结尾的目标定义目标变量
+```Makefile
+%.o : CFLAGS = -O
+```
+其语法如下：
+```Makefile
+<pattern ...> : <variable-assignment>
+
+<pattern ...> : override <variable-assignment>
+```
+
+## 六、使用条件判断
+### 1. 示例
+```Makefile
+libs_for_gcc = -lgnu
+normal_libs =
+
+foo: $(objects)
+ifeq ($(CC),gcc)
+    $(CC) -o foo $(objects) $(libs_for_gcc)
+else
+    $(CC) -o foo $(objects) $(normal_libs)
+endif
+```
+上例中，目标 `foo` 可根据变量 `$(CC)` 值选取不同函数库编译程序。`ifeq` 表示条件语句开始，并指定一个条件表达式，表达式包含两个参数，以逗号分隔，表达式以原括号起。`else` 表示条件表达式为假的情况。`endif` 表示一个条件语句的结束，任何一个条件表达式都应该以 `endif` 结束。
+
+上例可以写得更简洁一些：
+```Makefile
+libs_for_gcc = -lgnu
+normal_libs =
+
+ifeq ($(CC),gcc)
+    libs=$(libs_for_gcc)
+else
+    libs=$(normal_libs)
+endif
+
+foo: $(objects)
+    $(CC) -o foo $(objects) $(libs)
+```
+
+### 2. 语法
+条件表达式语法为：
+```Makefile
+<conditional-directive>
+<text-if-true>
+else
+<text-if-false>
+endif
+```
+其中 `<conditional-directive>` 表示条件关键字，这类关键字共4个。
+
+1. `ifeq`
+`ifeq` 为比较参数 `arg1` 和 `arg2` 的值是否相同，参数中可以使用make的函数。其语法为：
+    ```Makefile
+    ifeq (<arg1>, <arg2>)
+    ifeq '<arg1>' '<arg2>'
+    ifeq "<arg1>" "<arg2>"
+    ifeq "<arg1>" '<arg2>'
+    ifeq '<arg1>' "<arg2>"
+    ```
+
+2. `ifneq`
+`ifneq` 比较参数 `arg1` 和 `arg2` 的值是否不同，与 `ifeq` 类似。其语法如下：
+    ```Makefile
+    ifneq (<arg1>, <arg2>)
+    ifneq '<arg1>' '<arg2>'
+    ifneq "<arg1>" "<arg2>"
+    ifneq "<arg1>" '<arg2>'
+    ifneq '<arg1>' "<arg2>"
+    ```
+
+3. `ifdef`
+`ifdef` 检查变量 `<variable-name>` 值是否非空，如果值非空，则表达式为真，否则为假。`<variable-name>` 同样可以为一个函数的返回值。其语法如下：
+    ```Makefile
+    ifdef <variable-name>
+    ```
+    需要注意的是，`ifdef`只是测试一个变量是否有值，其并不会把变量扩展到当前位置。
+    ```Makefile
+    bar =
+    foo = $(bar)
+    ifdef foo
+        frobozz = yes
+    else
+        frobozz = no
+    endif
+    ```
+    和
+    ```Makefile
+    bar =
+    foo = $(bar)
+    ifdef foo
+        frobozz = yes
+    else
+        frobozz = no
+    endif
+    ```
+    第一个例子中，`$(frobozz)` 值是 `yes` ，第二个则是 `no`。
+4. `ifndef`
+`ifndef` 检查变量 `<variable-name>` 值是否为空，与 `ifdef` 类似，含义与之相反。其语法如下：
+    ```Makefile
+    ifndef <variable-name>
+    ```
+
+在 `<conditional-directive>` 中，多余的空格是被允许的，但不能以 `Tab` 键作为开始，否则被认为是命令。注释符 `#` 同样是安全的。`else` 和 `endif` 同样。
