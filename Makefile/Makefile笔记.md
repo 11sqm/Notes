@@ -829,3 +829,145 @@ endif
     ```
 
 在 `<conditional-directive>` 中，多余的空格是被允许的，但不能以 `Tab` 键作为开始，否则被认为是命令。注释符 `#` 同样是安全的。`else` 和 `endif` 同样。
+
+## 七、使用函数
+Makefile支持使用函数处理变量，从而使命令或规则更为灵活和只能。函数调用后，函数的返回值可以当作变量来使用。
+
+### 1. 函数调用语法
+函数调用，类似变量使用，使用 `$` 进行表示，语法如下：
+```Makefile
+$(<function> <arguments>)
+
+${<function> <arguments>}
+```
+此处 `<function>` 就是函数名，make所支持的函数并不多。`<arguments>` 为函数参数，参数间以逗号 `,` 分隔，函数名和参数间以空格分割。函数中的参数可以使用变量，为风格统一，函数和变量的括号最好一致，如使用 `$(subst a,b,$(x))` 形式。
+
+### 2. 字符串处理函数
+#### (1) subst
+```Makefile
+$(subst <from>,<to>,<text>)
+```
+- 名称：字符串替换函数
+- 功能：将字符串 `<text>` 中的 `<from>` 字符串替换为 `<to>`。
+- 返回：函数返回被替换后的字符串。
+- 示例：
+    ```Makefile
+    $(subst ee,EE,feet on the street)
+    ```
+    将 `feet on the street` 中的 `ee` 替换为 `EE`，返回结果是 `fEEt on the strEEt`。
+
+#### (2) patsubst
+```Makefile
+$(patsubst <pattern>,<replacement>,<text>)
+```
+- 名称：模式字符串替换函数
+- 功能：查找 `<text>` 中的单词（单词以“空格”、“Tab”或“回车”“换行”分隔）是否符合模式 `<pattern>`，如果匹配则以 `<replacement>` 替换。`<pattern>` 可以包括通配符 `%`，表示任意长度字符串。如果 `<replacement>` 中也包含 `%` ，那么， `<replacement>` 中的这个 `%` 将是 `<pattern>` 中的那个 `%` 所代表的字串。（可以用 `\` 来转义，以 `\%` 来表示真实含义的 `%` 字符）。
+- 返回：函数返回被替换过后的字符串。
+- 示例：
+    ```makefile
+    $(patsubst %.c,%.o,x.c.c bar.c)
+    ```
+    返回结果为 `x.c.o bar.o`。
+
+#### (3) strip
+```makefile
+$(strip <string>)
+```
+- 名称：去除空格函数
+- 功能：去掉 `<string>` 字符串中**开头和结尾**的空字符串。
+- 返回：去除空格后的字符串值。
+- 示例：
+    ```makefile
+    $(strip a b c )
+    ```
+    返回结果为 `a b c`。
+
+#### (4) findstring
+```makefile
+$(findstring <find>,<in>)
+```
+- 名称：查找字符串函数
+- 功能：在字符串 `<in>` 中查找 `<find>` 字串。
+- 返回：如果找到，那么返回 `<find>`，否则返回空字符串。
+- 示例：
+    ```makefile
+    $(findstring a,a b c)
+    $(findstring a,b c)
+    ```
+    第一个函数返回 `a` 字符串，第二个返回空字符串。
+
+#### (5) filter
+```makefile
+$(filter <patern...>,<text>)
+```
+- 名称：过滤函数
+- 功能：以 `<pattern>` 模式过滤 `<text>` 字符串中的单词，保留符合模式 `<pattern>` 的单词。可以有多个模式。
+- 返回：返回符合模式 `<pattern>` 的字符串。
+- 示例：
+    ```makefile
+    sources := foo.c bar.c baz.s ugh.h
+    foo : $(sources)
+        cc $(filter %.c %.s, $(sources)) -o foo
+    ```
+    `$(filter %.c %.s, $(sources))` 返回值为 `foo.c bar.c baz.s`。
+
+#### (6) filter-out
+```makefile
+$(filter-out <patern...>,<text>)
+```
+- 名称：反过滤函数
+- 功能：以 `<pattern>` 模式过滤 `<text>` 字符串中的单词，去除符合模式 `<pattern>` 的单词。可以有多个模式。
+- 返回：返回不符合模式 `<pattern>` 的字符串。
+
+#### (7) sort
+```makefile
+$(sort <list>)
+```
+- 名称：排序函数
+- 功能：给字符串 `<list>` 中的单词**升序**排序。
+- 返回：排序后的字符串
+- 示例：`$(sort foo bar lose)` 返回 `bar foo lose`。
+- 备注： `sort` 函数会去掉 `<list>` 中相同的单词。
+
+#### (8) word
+```makefile
+$(word <n>,<text>)
+```
+- 名称：取单词函数
+- 功能：取字符串 `<text>` 中的第 `<n>` 个单词。
+- 返回：回字符串 `<text>` 中第 `<n>` 个单词。如果 `<n>` 比 `<text>` 中的单词数要大，那么返回空字符串。
+
+#### (9) wordlist
+```makefile
+$(wordlist <ss>,<e>,<text>)
+```
+- 名称：取单词串函数
+- 功能：从字符串 `<text>` 中取 `<ss>` 开始到 `<e>` 的单词串。`<ss>` 和 `<e>` 是一个数字。
+- 返回：返回字符串 `<text>` 中从 `<ss>` 到 `<e>` 的单词字串。如果 `<ss>` 比 `<text>` 中的单词数要大，那么返回空字符串。如果 `<e>` 大于 `<text>` 的单词数，那么返回从 `<ss>` 开始，到 `<text>` 结束的单词串。
+- 示例：`$(wordlist 2, 3, foo bar baz)` 返回值是 `bar baz`。
+
+#### (10) words
+```makefile
+$(words <text>)
+```
+- 名称：单词个数统计函数
+- 功能：返回 `<text>` 中字符串中的单词个数。
+- 返回：返回 `<text>` 中的单词数。
+- 备注：如果我们要取 `<text>` 中最后的一个单词，我们可以这样： `$(word $(words <text>),<text>)` 。
+
+#### (11) firstword
+```makefile
+$(firstword <text>)
+```
+- 名称：取首单词函数
+- 功能：取字符串 `<text>` 中第一个单词。
+- 返回：返回字符串 `<text>` 中的第一个单词。
+- 备注：此函数可以使用 `word` 函数实现：`$(word 1,<text>)`。
+
+以上为所有字符串操作函数，混合搭配可以完成比较复杂功能。例如，由于make使用 `VPATH` 指定依赖文件搜索路径，可以利用搜索路径来指定编译器对头文件的搜索路径参数 `CFLAGS`，如：
+```makefile
+override CFLAGS += $(patsubst %,-I%,$(subst :, ,$(VPATH)))
+```
+如果 `$(VPATH)` 值是 `src:../headers` ，那么 `$(patsubst %,-I%,$(subst :, ,$(VPATH)))` 将返回 `-Isrc -I../headers` ，这正是cc或gcc搜索头文件路径的参数。
+
+### 3. 文件名操作函数
