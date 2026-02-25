@@ -971,3 +971,65 @@ override CFLAGS += $(patsubst %,-I%,$(subst :, ,$(VPATH)))
 如果 `$(VPATH)` 值是 `src:../headers` ，那么 `$(patsubst %,-I%,$(subst :, ,$(VPATH)))` 将返回 `-Isrc -I../headers` ，这正是cc或gcc搜索头文件路径的参数。
 
 ### 3. 文件名操作函数
+#### (1) dir
+```makefile
+$(dir <names...>)
+```
+- 名称：取目录函数
+- 功能：从文件名序列 `<names>` 中阙处目录部分。目录部分是指最后一个反斜杠 `/` 之前的部分。如果没有反斜杠，则返回 `./`。
+- 返回：返回文件名序列 `<names>` 的目录部分。
+- 示例： `$(dir src/foo.c hacks)` 返回值为 `src/ ./`。
+  
+#### (2) notdir
+```makefile
+$(notdir <names...>)
+```
+- 名称：取文件函数
+- 功能：从文件名序列 `<names>` 中取出非目录部分。非目录部分是指最后一个反斜杠 `/` 之后的部分。
+- 返回：返回文件名序列 `<names>` 的非目录部分。
+- 示例： `$(notdir src/foo.c hacks)` 返回值为 `foo.c hacks`。
+
+#### (3) suffix
+```makefile
+$(suffix <names...>)
+```
+- 名称：取后缀函数
+- 功能：从文件名序列 `<names>` 中取出各个文件名的后缀。
+- 返回：返回文件名序列 `<names>` 的后缀序列，如果文件没有后缀，则返回空字符串。
+- 示例：`$(suffix src/foo.c src-1.0/bar.c hacks)` 返回值为 `.c .c`。
+
+#### (4) basename
+```makefile
+$(basename <names...>)
+```
+- 名称：取前缀函数
+- 功能：从文件名序列 `<names>` 中取出各个文件名的前缀部分。
+- 返回：返回文件名序列 `<names>` 的前缀序列，如果文件没有前缀，则返回空字串。
+- 示例：`$(basename src/foo.c src-1.0/bar.c hacks)` 返回值为 `src/foo src-1.0/bar hacks`。
+
+#### (5) addsuffix
+```makefile
+$(addsuffix <suffix>,<names...>)
+```
+- 名称：加后缀函数
+- 功能：将后缀 `<suffix>` 加到 `<names>` 中的每个单词后面。
+- 返回：返回加过后缀的文件名序列。
+
+#### (6) addprefix
+```makefile
+$(addprefix <prefix>,<names...>)
+```
+- 名称：加前缀函数
+- 功能：将前缀 `<prefix>` 加到 `<names>` 中的每个单词前面。
+- 返回：返回加过前缀的文件名序列。
+
+#### (7) join
+```makefile
+$(join <list1>,<list2>)
+```
+- 名称：连接函数
+- 功能：将 `<list2>` 中的单词对应地加到 `<list1>` 的单词后面。如果 `<list1>` 的单词个数要比 `<list2>` 的多，则 `<list1>` 中多出来的单词将保持原样。如果 `<list2>` 的单词个数要比 `<list1>` 的多，则 `<list2>` 中多出来的单词将被复制到 `<list1>` 中。
+- 返回：连接过后的字符串。
+- 示例：`$(join aaa bbb , 111 222 333)` 返回值是 `aaa111 bbb222 333`。
+
+### 4. foreach函数
