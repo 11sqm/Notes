@@ -89,23 +89,53 @@
 - **运算指令**：在ALU中执行操作。
 - **数据移动指令**：负责内存读写操作。
 - **控制流指令**：改变执行顺序。
+### 3. 运算指令
+以加法指令为例：
+```C
+a = b + c;
+```
+其可以写为
+```asm
+add a, b, c
+```
+在MIPS架构中，假设寄存器分配如下：
+```asm
+b = $s1
+c = $s2
+a = $s0
+```
+则指令可以写为
+```asm
+add $s0,$s1,$s2
+```
+### 4. 数据移动指令
+此处以load word指令为例
+对于C语言：
+```C
+a = A[2];
+```
+在MIPS架构中，加载1个字宽度指令为
+```asm
+lw $s3, 8($s0)
+```
+需要注意的是，字节地址计算为：**word_address * bytes/word**
+在MIPS架构中，1word = 4bytes
 
-### 3. 指令格式
-#### (1) R-Type in MIPS
-R型指令指对寄存器进行运算的指令。
-![R-Type in MIPS](./pictures/R-Tpye_MIPS.png)
-- 0 = opcode
-- rs, rt = 源寄存器
-- rd = 目标寄存器
-- shamt = shift amount (only shift operations)
-- funct = operation in R-type instructions
+### 5. 改变执行顺序
+控制指令允许程序不按顺序执行，它们可以在执行阶段加载来改变PC，覆盖递增后的PC值。
 
-#### (2) I-Type in MIPS
+在MIPS中，指令如下：
+```asm
+j target
+```
+其格式如下，为J-Type类型：
+![jump语句格式](./pictures/MIPS_Jump语句格式.png)
+- 2 = opcode
+- target = target address
+- $$PC\leftarrow PC'[31:28]\ |\ signed-extend(target) * 4$$
+    > 需要解释的是，由于指令需要按字对齐，target实际上为字长指令，所以应当乘以4以得到实际地址，然后将结果拼接在PC'高4位后。**这也称为PC相对寻址。**
 
-#### (3) J-Type in MIPS
-
-
-### 4. Instruction (Processing) Cycle
+### 6. Instruction (Processing) Cycle
 指令处理周期主要由以下6部分组成：
 1. 取指
 2. 译码
@@ -137,17 +167,16 @@ R型指令指对寄存器进行运算的指令。
 #### (6) 存储结果
 此阶段将结果写入指定目标位置。当存储结果完成后，新的指令周期就从取指阶段重新开始。
 
-### 5. 改变执行顺序
-控制指令允许程序不按顺序执行，它们可以在执行阶段加载来改变PC，覆盖递增后的PC值。
+### 7. 指令格式
+#### (1) R-Type in MIPS
+R型指令指对寄存器进行运算的指令。
+![R-Type in MIPS](./pictures/R-Tpye_MIPS.png)
+- 0 = opcode
+- rs, rt = 源寄存器
+- rd = 目标寄存器
+- shamt = shift amount (only shift operations)
+- funct = operation in R-type instructions
 
-在MIPS中，指令如下：
-```asm
-j target
-```
-其格式如下，为J-Type类型：
-![jump语句格式](./pictures/MIPS_Jump语句格式.png)
-- 2 = opcode
-- target = target address
-- $$PC\leftarrow PC'[31:28]\ |\ signed-extend(target) * 4$$
-    > 需要解释的是，由于指令需要按字对齐，target实际上为字长指令，所以应当乘以4以得到实际地址，然后将结果拼接在PC'高4位后。**这也称为PC相对寻址。**
+#### (2) I-Type in MIPS
 
+#### (3) J-Type in MIPS
