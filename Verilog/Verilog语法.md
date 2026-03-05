@@ -72,7 +72,7 @@
     ```verilog
     reg a; // 1位寄存器型数据，命名为a
     reg [3:0] b; // 4位寄存器型数据，命名为b
-    reg[8:1] c, d, e; // 8位寄存器数据类型，命名分别为c、d、e
+    reg [8:1] c, d, e; // 8位寄存器数据类型，命名分别为c、d、e
     ```
     一般为无符号数，定义为有符号数会自动转化为补码形式
     ```verilog
@@ -105,10 +105,10 @@
    比较结果有三种，1，0和不定值x
 4. 逻辑运算符(与&&、或||、非!)
    对于`a=4'b1001`，`b=4'b0000`，则`!a=1'b0`，`!b=1'b1`，`a&&b=0`，`a||b=1`
-5. 按位操作符(取反~、按位与&、按位或|、按位异或^、按位同或~^)
+5. 按位操作符(取反`~`、按位与`&`、按位或`|`、按位异或`^`、按位同或`~^`)
 6. 规约运算符(缩位运算符)
-   与&、或|、异或^，以及相应非操作~&、~|、~^、^~
-7. 移位运算符(左移运算符<<、右移运算符>>)
+   与`&`、或`|`、异或`^`，以及相应非操作`~&`、`~|`、`~^`、`^~`
+7. 移位运算符(左移运算符`<<`、右移运算符`>>`)
 8. 条件运算符
    `<条件表达式>?<表达式1>:<表达式2>`
    条件表达式结果为真时，执行表达式1，结果为假时，执行表达式2.
@@ -261,67 +261,67 @@ generate 是 Verilog 用来在综合（elaboration）阶段自动生成硬件结
 
 1. generate循环结构
 
-generate循环的语法与for循环语句的语法很相似。**但是在使用时必须先在genvar声明中声明循环中使用的索引变量名，然后才能使用它。** genvar声明的索引变量被用作整数用来判断generate循环。genvar声明可以是generate结构的内部或外部区域，并且相同的循环索引变量可以在多个generate循环中，只要这些环不嵌套。genvar只有在建模的时候才会出现，在仿真时就已经消失了。
+    generate循环的语法与for循环语句的语法很相似。**但是在使用时必须先在genvar声明中声明循环中使用的索引变量名，然后才能使用它。** genvar声明的索引变量被用作整数用来判断generate循环。genvar声明可以是generate结构的内部或外部区域，并且相同的循环索引变量可以在多个generate循环中，只要这些环不嵌套。genvar只有在建模的时候才会出现，在仿真时就已经消失了。
 
-在“展开”生成循环的每个实例中，将创建一个隐式localparam，其名称和类型与循环索引变量相同。它的值是“展开”循环的特定实例的“索引”。可以从RTL引用此localparam以控制生成的代码，甚至可以由分层引用来引用。
+    在“展开”生成循环的每个实例中，将创建一个隐式localparam，其名称和类型与循环索引变量相同。它的值是“展开”循环的特定实例的“索引”。可以从RTL引用此localparam以控制生成的代码，甚至可以由分层引用来引用。
 
-Verilog中generate循环中的generate块可以命名也可以不命名。如果已命名，则会创建一个generate块实例数组。如果未命名，则有些仿真工具会出现警告，因此，最好始终对它们进行命名。
-语法：
-```verilog
-genvar i;
-generate
-    for (i = 0; i < N; i = i+1) begin : block_name
-        // 硬件实现
-    end
-endgenerate
-```
-例如：
-```verilog
-module nbit_xor #(
-    parameter SIZE = 16
-) (
-    input  [SIZE-1:0] a,
-    b,
-    output [SIZE-1:0] y
-);
-    genvar gv_i;
+    Verilog中generate循环中的generate块可以命名也可以不命名。如果已命名，则会创建一个generate块实例数组。如果未命名，则有些仿真工具会出现警告，因此，最好始终对它们进行命名。
+    语法：
+    ```verilog
+    genvar i;
     generate
-        for (gv_i = 0; gv_i < SIZE; gv_i = gv_i + 1) begin : sblka
-            xor uxor (y[gv_i], a[gv_i], b[gv_i]);
+        for (i = 0; i < N; i = i+1) begin : block_name
+            // 硬件实现
         end
     endgenerate
-endmodule
-```
+    ```
+    例如：
+    ```verilog
+    module nbit_xor #(
+        parameter SIZE = 16
+    ) (
+        input  [SIZE-1:0] a,
+        b,
+        output [SIZE-1:0] y
+    );
+        genvar gv_i;
+        generate
+            for (gv_i = 0; gv_i < SIZE; gv_i = gv_i + 1) begin : sblka
+                xor uxor (y[gv_i], a[gv_i], b[gv_i]);
+            end
+        endgenerate
+    endmodule
+    ```
 2. 条件if-generate构造
 
-条件语句从很多的备选块中选择最多一个generate块，有可能是一个也不选择的。在建模中，**条件必须为常量表达式。**
+    条件语句从很多的备选块中选择最多一个generate块，有可能是一个也不选择的。在建模中，**条件必须为常量表达式。**
 
-条件if-generate不关心是否命名，并且可以不具有**begin / end**。当然，上述两个条件只能包含一项。它也会创建单独的范围和层次结构级别，这个和generate循环是一样的。由于最多选择一个代码块，因此在单个的if-generate中以相同的名称命名所有的备用代码块是合法的，而且这有助于保持对代码的分层引用。但是，不同的generate构造中必须具有不同的名称。
+    条件if-generate不关心是否命名，并且可以不具有**begin / end**。当然，上述两个条件只能包含一项。它也会创建单独的范围和层次结构级别，这个和generate循环是一样的。由于最多选择一个代码块，因此在单个的if-generate中以相同的名称命名所有的备用代码块是合法的，而且这有助于保持对代码的分层引用。但是，不同的generate构造中必须具有不同的名称。
 
-```verilog
-generate
-    if (WIDTH == 32) begin
-        // 生成 32-bit 版本
-    end else begin
-        // 生成 16-bit 版本
-    end
-endgenerate
-```
+    ```verilog
+    generate
+        if (WIDTH == 32) begin
+            // 生成 32-bit 版本
+        end else begin
+            // 生成 16-bit 版本
+        end
+    endgenerate
+    ```
 3. 条件case-generate构造
 
-与if-generate类似，case-generate也可用于从几个块中有条件地选择一个代码块。它的用法类似于基本case语句，并且if-generate中的所有规则也适用于case-generate块。
-```verilog
-generate
-    case (MODE)
-        0: begin : M0
-            // 结构 0
-        end
-        1: begin : M1
-            // 结构 1
-        end
-    endcase
-endgenerate
-```
+    与if-generate类似，case-generate也可用于从几个块中有条件地选择一个代码块。它的用法类似于基本case语句，并且if-generate中的所有规则也适用于case-generate块。
+    ```verilog
+    generate
+        case (MODE)
+            0: begin : M0
+                // 结构 0
+            end
+            1: begin : M1
+                // 结构 1
+            end
+        endcase
+    endgenerate
+    ```
 ### 3. 结构化建模
 **结构化建模不可嵌套在 always/initial 等过程语句中。**
 #### (1)模块级建模
