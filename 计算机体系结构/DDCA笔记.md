@@ -20,7 +20,7 @@
 3. 输入单元 Input
 4. 输出单元 Output
 5. 控制单元 Control unit
-![冯诺伊曼模型](./pictures/冯诺依曼模型.png)
+![冯诺伊曼模型](./pictures/冯诺伊曼模型.png)
 
 ### 4. Memory
 #### (1) 基本概念
@@ -217,6 +217,7 @@ R型指令指对寄存器进行运算的指令。
 
 #### (2) I-Type in MIPS
 ![I-Type in MIPS](./pictures/I-Type_MIPS.png)
+
 - immediate = 立即数
 
 #### (3) J-Type in MIPS
@@ -399,27 +400,38 @@ z = x * y;
 
 #### (3) 算数和逻辑指令单周期数据通路
 由于算数与逻辑指令多为R型与I型指令，因此先考虑R型指令格式，其格式如下：
+
 ![R-Type in MIPS](./pictures/R-Type_MIPS.png)
+
 考虑数据通路，具体如下：
+
 ![R-type数据通路](./pictures/R-type数据通路.png)
 其中，ALU所执行的运算类型由 `funct` 决定。
 
 接下来考虑I型指令。其格式如下：
+
 ![I-Type in MIPS](./pictures/I-Type_MIPS.png)
+
 其操作类似，但是应当注意立即数的处理部分。为处理立即数，应当添加符号拓展模块，此外，为保证数据正常流通，应当加入数据选择器。其数据通路如下：
+
 ![I-type数据通路](./pictures/I-type数据通路.png)
 
 #### (4) 数据移动指令单周期数据通路
 对于数据移动指令多为I型指令，格式如下：
+
 ![I-Type in MIPS](./pictures/I-Type_MIPS.png)
+
 考虑load指令，如 `lw`，与store指令，如 `sw`，则由如下数据通路：
+
 ![数据移动指令单周期数据通路](./pictures/数据移动指令单周期数据通路.png)
 
 然而考虑算数和逻辑指令，为同时支持二者，需要在电路中添加MUX。
 
 #### (5) 控制流令单周期数据通路
 控制流指令为J型指令与I型指令。对于无条件跳转，其为J型指令，格式如下：
+
 ![J-Type in MIPS](./pictures/J-Type_MIPS.png)
+
 对于J型指令实现，需要注意的是
 ```verilog
 PC' = PC + 4;
@@ -427,6 +439,7 @@ PC = {PC'[31:28], immediate, 2'b00};
 ```
 
 对于有条件跳转，其为I型指令，格式如下：
+
 ![I-Type in MIPS](./pictures/I-Type_MIPS.png)
 
 #### (6) 完整数据通路与控制逻辑
@@ -436,6 +449,7 @@ PC = {PC'[31:28], immediate, 2'b00};
 
 2. 控制逻辑
     对于控制逻辑，其中一种就是设计单周期硬连线控制，将其作为指令位的组合逻辑函数，主要参考指令格式，并依据opcode产生控制信号。
+
     ![控制信号I](./pictures/控制信号I.png)
 
     ![控制信号II](pictures/控制信号II.png)
@@ -470,3 +484,20 @@ PC = {PC'[31:28], immediate, 2'b00};
 3. 缺陷
     - 并发性限制
     - 每个时钟周期结束需要存储中间结果
+
+#### (1) 多周期微架构实现
+多周期微架构实现其核心思想为讲指令处理步骤视为一个状态机，且状态序列最终会回到取指令状态。
+
+一个状态的确定取决于该状态下激活的控制信号，而下一状态的控制信号由现有状态决定。
+
+![Multi-cycle Processor](./pictures/Multi-cycle_Processor.png)
+
+#### (2) 多周期控制逻辑
+控制逻辑本质上是要构建一个有限状态机。
+
+![Multi-cycle Control logic](pictures/Multi-cycle_Control_logic.png)
+
+通过不同状态设置不同控制信号实现控制逻辑。
+
+对于内存读写等需要多周期的操作，需要在读写过程中保持在当前状态不发生状态跳转。此时内存需要想控制逻辑提供若干位信号用于决定下一个状态。
+
