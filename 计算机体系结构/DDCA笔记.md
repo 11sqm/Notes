@@ -216,12 +216,12 @@ R型指令指对寄存器进行运算的指令。
 - funct = operation in R-type instructions
 
 #### (2) I-Type in MIPS
-![I-Type in MIPS](./pictures/I-Type_MIPS.png)
+![I-Type in MIPS](pictures/I-type_MIPS.png)
 
 - immediate = 立即数
 
 #### (3) J-Type in MIPS
-![J-Type in MIPS](./pictures/J-Type_MIPS.png)
+![J-Type in MIPS](./pictures/J-type_MIPS.png)
 
 ### 9. 数据类型
 一种ISA支持一种或多种数据类型。以MIPS为例，其支持如下类型：
