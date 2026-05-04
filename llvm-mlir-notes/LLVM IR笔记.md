@@ -1,5 +1,6 @@
 # LLVM IR 笔记
 ---
+本笔记主要参考[文档](https://evian-zhang.github.io/llvm-ir-tutorial/01-LLVM%E6%9E%B6%E6%9E%84%E7%AE%80%E4%BB%8B.html)中内容，仅仅是作为学习记录，未经允许不得转载。
 ## 一、LLVM 架构简介
 ### 1. LLVM是什么
 LLVM通过将语言源代码编译成LLVM中间代码 (LLVM IR)，然后由LLVM后端对中间代码进行优化，并且编译到相应平台的二进制程序。
