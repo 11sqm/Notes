@@ -425,7 +425,7 @@ store i32 1, ptr @global_variable
 ```
 
 #### [2] SSA
-LLVM IR严格遵守SSA (Static Single Assignment)策略，每个变量只被赋值一次，因此以下操作非法：
+LLVM IR严格遵守SSA (Static Single Assignment)策略。SSA要求每个变量只被赋值一次，因此以下操作中对 `%1` 同时赋值两次是不被允许的：
 ```llvm
 %1 = add i32 1, 2
 %1 = add i32 3, 4
@@ -433,3 +433,77 @@ LLVM IR严格遵守SSA (Static Single Assignment)策略，每个变量只被赋�
 通过使用SSA，编译器可以进行更好的优化，应用更成熟的算法，得到更好的结果。
 
 ## 四、类型系统
+汇编语言是弱类型的，在操作时实际上考虑的是一些二进制序列。但是LLVM IR是强类型的，在LLVM IR中所有变量都必须由类型。
+
+### 1. 基本的数据类型
+LLVM IR的基本数据类型包括：
+- 空类型 (`void`)
+- 整型 (`iN`)
+- 浮点型 (`float`、`double` 等)
+
+空类型一般作为不返回值的函数的返回类型，无特殊意义。
+
+整型指 `i1`，`i8`，`i16`，`i32`，`i64`等数据类型，`iN` 中 `N` 可以是任意正整数。但最常用，最符合常理的为 `i1` 以及8的整数倍。`i1` 有两个值：`true` 与 `false`。因此如下代码可以正确编译：
+```llvm
+%boolean_variable = alloca i1
+store i1 true, ptr %boolean_variable
+```
+
+对于大于1位的整型，可以直接使用数字字面赋值。
+
+#### (1) 符号
+在LLVM IR中，整型默认是有符号整型，可以直接将 `-128` 以补码形式赋值给 `i32` 类型的变量。在LLVM IR中，**整型的有无符号是体现在操作指令而非类型上**，比方说，对于两个整型变量的除法，LLVM IR分别提供了 `udiv` 和 `sdiv` 指令分别适用于无符号整型除法和有符号整型除法：
+```llvm
+%1 = udiv i8 -6, 2    ; Get (256 - 6) / 2 = 125
+%2 = sdiv i8 -6, 2    ; Get (-6) / 2 = -3
+```
+
+#### (2) 转换指令
+LLVM IR提供三种指令进行整型转换，分别为：`trunc` .. `to` 指令，`zext` .. `to` 指令和 `sext` .. `to` 指令。
+
+将长的整型转换为短的整型通过去除多余高位即可，对应LLVM IR指令为 `trunc` .. `to` 指令：
+```llvm
+%trunc_integer = trunc i32 257 to i8 ; Trunc 32 bit 100000001 to 8 bit, get 1
+```
+
+将短的整型转换为长的整型需要考虑拓展方式，分为零拓展 `zext` .. `to` 指令和符号拓展 `sext` .. `to` 指令。
+
+零拓展实现最为简单，即在高位补 `0`，而符号拓展则是用原数的符号位填充。
+```llvm
+%zext_integer = zext i8 -1 to i32 ; Extend 8 bit 0xFF to 32 bit 0x000000FF, get 255
+%sext_integer = sext i8 -1 to i32 ; Extend 8 bit 0xFF to 32 bit 0xFFFFFFFF, get -1
+```
+
+类似地，浮点型的数和整型的数也可以相互转换，使用 `fptoui` .. `to`, `fptosi` .. `to`, `uitofp` .. `to`, `sitofp` .. `to` 可以分别将浮点数转换为无符号、有符号整型，将无符号、有符号整型转换为浮点数。不过有一点要注意的是，如果将大数转换为小的数，那么并不保证截断，如将浮点型的257.1转换成i8（上限为128），那么就会产生未定义行为。所以，在浮点型和整型相互转换的时候，需要在高级语言层面做一些调整，如使用饱和转换等。
+
+### 2. 指针类型
+LLVM IR中的指针类型为 `ptr`。与C语言不同，LLVM IR中的指针不含有其指向内容的类型，类似于C语言中的 `void *`。
+
+高级语言中，直接操作裸指针机会较少，但存在需要将指针看作一个具体的数值进行加减的场景：
+```c
+int x, y;
+size_t address_of_x = (size_t)&x;
+size_t address_of_y = address_of_x - sizeof(int);
+int also_y = *(int *)address_of_y
+```
+
+在LLVM IR层次，为了使指针能像整型一样加减，提供了 `ptrtoint` .. `to` 指令和 `inttoptr` .. `to` 指令，分别解决将指针转换为整型，和将整型转换为指针的功能。因此上述程序可以转写为
+```llvm
+%x = alloca i32
+%y = alloca i32
+%address_of_x = ptrtoint ptr %x to i64
+%address_of_y = sub i64 %address_of_x, 4
+%also_y = inttoptr i64 %address_of_y to ptr
+```
+
+### 3. 聚合类型
+对于C语言中常见的聚合类型如数组与结构体，LLVM IR也有相应支持。
+
+对于数组，如果要声明一个类似 `int a[4]`，只需要
+```llvm
+%a = alloca [4 x i32]
+```
+同样，也可以使用类似语法进行初始化：
+```llvm
+@global_array = global [4 x i32] [i32 0, i32 1, i32 2, i32 3]
+```
