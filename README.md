@@ -5,4 +5,5 @@
 2. [Verilog语法](Verilog/Verilog语法.md)
 3. [Shell笔记](shell/Shell笔记.md)
 4. [计算机体系结构](计算机体系结构/DDCA笔记.md)
-5. [LLVM IR](<llvm-mlir-notes\LLVM IR笔记.md>)
+5. [计算机体系结构-进阶](<计算机体系结构/Computer Architecture笔记.md>)
+6. [LLVM IR](<llvm-mlir-notes\LLVM IR笔记.md>)
