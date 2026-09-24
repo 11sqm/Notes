@@ -6,4 +6,4 @@
 3. [Shell笔记](shell/Shell笔记.md)
 4. [计算机体系结构](计算机体系结构/DDCA笔记.md)
 5. [计算机体系结构-进阶](<计算机体系结构/Computer Architecture笔记.md>)
-6. [注意力机制](ai/注意力机制.md)
+6. [ai](ai/目录.md)
