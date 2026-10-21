@@ -53,3 +53,51 @@ $$\hat{y}_k = \text{Softmax}(z_k) = \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}$$
 $$H(\mathbf{y}, \mathbf{\hat{y}}) = -\sum_{k=1}^{K} y_k \log \hat{y}_k$$
 
 ## 二、神经网络训练
+### 1. 梯度下降
+$$\theta^* = \arg\min_{\theta} \underbrace{\sum_{i=1}^{N} \mathcal{L}(f_\theta(\mathbf{x}^{(i)}), \mathbf{y}^{(i)})}_{J(\theta)}$$
+
+单次梯度下降迭代为：
+$$\theta^{k+1}\leftarrow\theta^k-\eta\nabla_\theta J(\theta^k)$$
+
+$\eta$ 为学习率，决定沿着梯度方向前进的步长。
+
+### 2. 随机梯度下降 (Stochastic Gradient Descent)
+SGD 中，对数据集的某个子集计算梯度，可以合理近似替代对整个数据集计算梯度。将这一子集称为批次 (batch)。
+
+- 如果批次大小为1，则意味着每看到数据集中一个样本，则更新一次参数。
+- 如果批次大小为 N，与完整数据集大小相同，则变为梯度下降。
+
+与所有示例的平均值相比，即标准梯度下降，SGD 梯度方向存在噪声。
+
+SGD 同时具有如下优势：
+- 速度更快：即使使用小样本，也能很好地逼近总体梯度。
+- 隐式正则化：随机噪声实际上起到了一种隐式正则化作用，帮助模型跳出局部最小值，更有可能找到接近全局最优解的路径。
+
+SGD 同样也会导致方差较大，且参数更新不稳定。
+
+### 3. 动量 (Momentum)
+通过引入动量，让梯度更新倾向于延续之前更新的方向：
+$$\theta^{t+1}\leftarrow\theta^t-\eta\nabla f(\theta^k)-\alpha m^t$$
+
+$\alpha$ 为动量强度，是超参数。
+
+### 4. 进化策略
+进化策略具有类似梯度的特性，能够在参数空间中寻找局部损失最小化的方向。
+
+进化策略在现有参数值周围进行微小扰动采样，然后沿能够降低损失值的扰动方向移动。
+$$\begin{aligned}
+\epsilon_i &\sim \mathcal{N}(\mathbf{0}, \mathbf{I}) \\
+s_i &= J(\theta + \sigma\epsilon_i)
+\end{aligned}
+\qquad
+\theta^{k+1} \leftarrow \theta^k - \eta \frac{1}{\sigma M} \sum_{i=1}^M s_i\epsilon_i$$
+
+### 5. 梯度裁剪
+梯度裁剪主要应对损失函数中可能出现的“尖峰”或“陡峭”区域。
+
+如果梯度值超过某个设定的较大阈值，则只需将其按比例约回该阈值范围内。
+$$\begin{aligned}
+&\mathbf{v} = \nabla_\theta J(\theta^k) \\
+&\theta^{k+1} \leftarrow \theta^k - \eta [\operatorname{clip}(v_1, -m, m), \dots, \operatorname{clip}(v_M, -m, m)]^\top
+\end{aligned}$$
+
