@@ -101,3 +101,63 @@ $$\begin{aligned}
 &\theta^{k+1} \leftarrow \theta^k - \eta [\operatorname{clip}(v_1, -m, m), \dots, \operatorname{clip}(v_M, -m, m)]^\top
 \end{aligned}$$
 
+### 6. 前向传播与反向传播
+#### (1) 计算图
+计算图是一个由不同函数变换（节点）构成的图，并且当这些节点串联起来时，便能执行某些有用的计算。
+
+深度学习主要处理的是有向无环图 (DAGs)，且每一个节点都是可微的。
+
+#### (2) 前向传播
+![前向传播](pictures/前向传播.png)
+
+多层前向传播可以表示一个多层感知机 (MLP)。
+![MLP](pictures/MLP.png)
+
+#### (3) 反向传播
+依据链式法则，可以将参数偏导数分解为：
+$$\frac{\partial J}{\partial \theta_i} = \frac{\partial J}{\partial \mathbf{x}_L} \frac{\partial \mathbf{x}_L}{\partial \mathbf{x}_{L-1}} \cdots \frac{\partial \mathbf{x}_{i+1}}{\partial \mathbf{x}_i}  \frac{\partial \mathbf{x}_i}{\partial \theta_i}$$
+
+由于$\frac{\partial \mathbf{x}_i}{\partial\theta_i}$项前的系数可以共享，所以只需要计算其值一次即可。
+
+![反向传播](pictures/反向传播.png)
+
+反向传播需要跟踪两类偏导数数组：
+- **L**：层输出相对于层输入的梯度，为一个矩阵。
+
+$$\begin{aligned}
+\mathbf{L} &\triangleq \frac{\partial \mathbf{x}_{\text{out}}}{\partial [\mathbf{x}_{\text{in}}, \theta]} \\
+\mathbf{L}^{\mathbf{x}} &\triangleq \frac{\partial \mathbf{x}_{\text{out}}}{\partial \mathbf{x}_{\text{in}}} \\
+\mathbf{L}^{\theta} &\triangleq \frac{\partial \mathbf{x}_{\text{out}}}{\partial \theta}
+\end{aligned}
+$$
+
+- **g**：损失函数关于激活值的梯度，为行向量。
+
+$$\begin{aligned}
+\mathbf{g} &\triangleq \frac{\partial J}{\partial \mathbf{x}} \\
+\mathbf{g}_{\text{out}} &\triangleq \frac{\partial J}{\partial \mathbf{x}_{\text{out}}} \\
+\mathbf{g}_{\text{in}} &\triangleq \frac{\partial J}{\partial \mathbf{x}_{\text{in}}}
+\end{aligned}
+$$
+
+在已知 **L** 与 **g** 情况下，容易完成对于单层参数的更新：
+$$\frac{\partial J}{\partial\theta}=\frac{\partial J}{\partial\mathbf{x}_{out}}\frac{\partial\mathbf{x}_{out}}{\partial\theta}=\mathbf{g}_{out}\mathbf{L}^{\theta}$$
+
+$$\theta^{i+1}\leftarrow\theta^i-\eta\left(\frac{\partial J}{\partial\theta}\right)^{\text{T}}$$
+
+其中，对于 $\mathbf{L}$ 与 $\mathbf{g}$，其计算方式如下：
+$$\mathbf{L}=f'(\mathbf{x}_{in},\theta)$$
+
+$$\mathbf{g}_{in}=\mathbf{g}_{out}\mathbf{L}^{\mathbf{x}}$$
+
+![反向传播偏导](pictures/反向传播偏导.png)
+
+#### (4) 完整算法流程
+完整算法流程为，先进行前向传播，再进行反向传播，更新参数，并重复这一过程。
+![完整算法流程](pictures/完整算法流程.png)
+
+### 7. MLP 反向传播
+#### (1) 线性层
+线性层中，$\mathbf{x}_{out}=\mathbf{W}\mathbf{x}_{in}$，因此有：
+$$\mathbf{g}_{in}=\mathbf{g}_{out}\frac{\partial\mathbf{x}_{out}}{\partial\mathbf{x}_{in}}=\mathbf{g}_{out}\cdot\mathbf{W}$$
+
