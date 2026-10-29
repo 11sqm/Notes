@@ -107,6 +107,12 @@ $$\begin{aligned}
 
 深度学习主要处理的是有向无环图 (DAGs)，且每一个节点都是可微的。
 
+深度学习中并非所有 DAGs 均为链式，存在非链式 DAGs。
+
+![非链式DAGs](pictures/非链式DAGs.png)
+
+其中关于非链式 DAGs 一个典型示例即参数共享。
+
 #### (2) 前向传播
 ![前向传播](pictures/前向传播.png)
 
@@ -156,8 +162,22 @@ $$\mathbf{g}_{in}=\mathbf{g}_{out}\mathbf{L}^{\mathbf{x}}$$
 完整算法流程为，先进行前向传播，再进行反向传播，更新参数，并重复这一过程。
 ![完整算法流程](pictures/完整算法流程.png)
 
-### 7. MLP 反向传播
-#### (1) 线性层
+#### (5) MLP 反向传播
 线性层中，$\mathbf{x}_{out}=\mathbf{W}\mathbf{x}_{in}$，因此有：
 $$\mathbf{g}_{in}=\mathbf{g}_{out}\frac{\partial\mathbf{x}_{out}}{\partial\mathbf{x}_{in}}=\mathbf{g}_{out}\cdot\mathbf{W}$$
 
+利用反向传播更新权重方式如下：
+$$\frac{\partial J}{\partial\mathbf{W}}=\mathbf{g}_{out}\cdot\frac{\partial \mathbf{x}_{out}}{\partial\mathbf{W}}$$
+
+通过观察参数 $\mathbf{W}_{ij}$，注意到其发生改变时，仅有输出的第 i 个分量发生变化。因此可以通过以下分解逐步分析过程：
+$$\frac{\partial J}{\partial\mathbf{W}_{ij}}=\frac{\partial J}{\partial\mathbf{x}_{out_i}}\cdot\frac{\partial \mathbf{x}_{out_i}}{\partial\mathbf{W}_{ij}}=\frac{\partial J}{\partial\mathbf{x}_{out_i}}\cdot\mathbf{x}_{in_j}$$
+
+基于以上推导，$\frac{\partial J}{\partial\mathbf{W}}$ 可以进一步写为：
+$$\frac{\partial J}{\partial\mathbf{W}}=\mathbf{x}_{in}\cdot\mathbf{g}_{out}$$
+
+因此，实际更新权重公式为：
+$$\mathbf{W}^{k+1}\leftarrow\mathbf{W}^k+\eta\left(\frac{\partial J}{\partial \mathbf{W}}\right)^T$$
+
+![MLP反向传播](pictures/MLP反向传播.png)
+
+反向传播过程中，由于不希望梯度在此经过 ReLU 激活，因此并不会像前向传播那样直接应用函数。取而代之的是，将其转换为一个门控矩阵，并由前向传播中激活函数的输出结果进行参数化。通过这一操作，从而能够确保在前向传播中处于 ReLU 函数零点区域的权重分量，其梯度不会被传递下去。
