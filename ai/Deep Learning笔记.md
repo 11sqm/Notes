@@ -181,3 +181,67 @@ $$\mathbf{W}^{k+1}\leftarrow\mathbf{W}^k+\eta\left(\frac{\partial J}{\partial \m
 ![MLP反向传播](pictures/MLP反向传播.png)
 
 反向传播过程中，由于不希望梯度在此经过 ReLU 激活，因此并不会像前向传播那样直接应用函数。取而代之的是，将其转换为一个门控矩阵，并由前向传播中激活函数的输出结果进行参数化。通过这一操作，从而能够确保在前向传播中处于 ReLU 函数零点区域的权重分量，其梯度不会被传递下去。
+
+## 三、近似理论
+近似问题定义为：给定一个曲线族 $G$ 以及一个神经网络族 $F$，对于 $\forall g \in G$，是否 $\exist f \in F$，使得能够以较小的误差拟合该函数，即 $error(f,g)<\varepsilon$。
+
+以下是一些常见 error 函数：
+$$error_{\infin}(f,g)=\max_x|f(x)-g(x)|$$
+
+$$error_1(f,g)=\int|f(x)-g(x)|dx$$
+
+以下将讨论 **Lipschitz 连续函数**能否被神经网络有效逼近。
+
+### 1. Lipschitz 连续函数
+设函数 $g:\mathbb{R}\to\mathbb{R}$，若存在常数 $L\geq 0$，使得
+
+$$\forall x \in \mathbb{R}, \Delta x \in \mathbb{R}, g : \mathbb{R} \to \mathbb{R}\ 满足\ |g(x + \Delta x) - g(x)| \leq L |\Delta x|$$
+
+则称 $g$ 为 **$L$-Lipschitz 连续函数**，其中 $L$ 为 Lipschitz 常数。
+
+Lipschitz 连续函数可以进一步推广到多维，具体定义如下：
+
+函数 $g:\mathbb{R}^d\to\mathbb{R}$，存在常数 $L\geq 0$，使得
+
+$$\forall x \in \mathbb{R}^d, \Delta x \in \mathbb{R}^d, g : \mathbb{R}^d \to \mathbb{R}\ 满足\ |g(x + \Delta x) - g(x)| \leq L ||\Delta x||$$
+
+此时由于 $\Delta x$ 为向量，应当选择其范数作为度量。一种常见的范数为均方根范数，其定义如下：
+
+$$||x||_{RMS}=\sqrt{\frac{1}{d}\sum_{i=1}^d x_i^2}=\frac{1}{\sqrt{d}}||x||_2$$
+
+### 2. 通用函数逼近
+令 $g:[0,1]^d\to \mathbb{R}$为任意 $L$-Lipschitz 连续函数，则对于 $\forall \varepsilon>0$，$\exist$  3-layer ReLU 网络，其神经元数量为 $N=4d(\frac{L}{\varepsilon})^d$，使得
+$$\int|f(x)-g(x)|dx<2\varepsilon$$
+
+该定理证明如下：
+#### (1) Approximation with rectangles
+首先，通过矩形条带近似，得到一维输入结果。
+
+定义 $f(x)=\sum_i\alpha_i\mathbb{I}_i$ 为函数 $g(x)$ 的逼近函数。
+
+假设矩形左边缘恰好与函数曲线相切，由 $L$-Lipschitz 连续函数定义，有 
+$$|f(x)-g(x)|=|g(x + \Delta x) - g(x)| \leq L |\Delta x|$$
+
+由于共 N 个条带，因此条带宽度为 $\frac{1}{N}$。
+
+![一维逼近误差](一维逼近误差.png)
+
+上方三角面积为 $\frac{1}{2}\frac{L}{N^2}$，因此对于总误差有：
+$$\int|f(x)-g(x)|dx\leq N\cdot \frac{1}{2}\frac{L}{N^2}=\frac{L}{2N}$$
+
+因此 $\varepsilon=\frac{L}{2N}$，从而得到 $N\geq\frac{L}{2\varepsilon}$。
+
+#### (2) Higher input dimension
+假设有 N 个超矩形，则每条边欧几里得长度为 $\frac{1}{N^{\frac{1}{d}}}$。
+
+![高维逼近误差](高维逼近误差.png)
+
+因此对于总误差，有：
+$$\int|f(x)-g(x)|dx\leq N\cdot \frac{L}{N^{\frac{1}{d}}}\cdot\frac{1}{N}=\frac{L}{N^{\frac{1}{d}}}$$
+
+因此 $N\geq(\frac{L}{\varepsilon})^d$。
+
+#### (3) ReLU networks can fit rectangles
+定义函数 $f_c(x)$ 为：
+$$f_c(x) = \begin{bmatrix} +1 \\ -1 \\ -1 \\ +1 \end{bmatrix}^T \mathrm{ReLU} \begin{bmatrix} cx \\ cx - 1 \\ c(x-1) - 2 \\ c(x-1) - 3 \end{bmatrix}$$
+
