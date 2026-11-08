@@ -210,6 +210,8 @@ $$\forall x \in \mathbb{R}^d, \Delta x \in \mathbb{R}^d, g : \mathbb{R}^d \to \m
 $$||x||_{RMS}=\sqrt{\frac{1}{d}\sum_{i=1}^d x_i^2}=\frac{1}{\sqrt{d}}||x||_2$$
 
 ### 2. 通用函数逼近
+以下定理与证明可以看作通用函数逼近定理的一个定量化、构造性的特殊结果，但其结论与论证过程依旧具有启发性。
+
 令 $g:[0,1]^d\to \mathbb{R}$为任意 $L$-Lipschitz 连续函数，则对于 $\forall \varepsilon>0$，$\exist$  3-layer ReLU 网络，其神经元数量为 $N=4d(\frac{L}{\varepsilon})^d$，使得
 $$\int|f(x)-g(x)|dx<2\varepsilon$$
 
@@ -245,3 +247,64 @@ $$\int|f(x)-g(x)|dx\leq N\cdot \frac{L}{N^{\frac{1}{d}}}\cdot\frac{1}{N}=\frac{L
 定义函数 $f_c(x)$ 为：
 $$f_c(x) = \begin{bmatrix} +1 \\ -1 \\ -1 \\ +1 \end{bmatrix}^T \mathrm{ReLU} \begin{bmatrix} cx \\ cx - 1 \\ c(x-1) - 2 \\ c(x-1) - 3 \end{bmatrix}$$
 
+令 $c\to\infty$，则函数变为一维矩形函数：
+![函数图像](pictures/f_c(x)函数图像.png)
+
+对于 $d$ 维输入 $\mathbf{x}=(x_1,x_2,\ldots,x_d)^T$，可以将 $d$ 个一维矩形函数相加：
+$$
+S(\mathbf{x})=\sum_{i=1}^{d}f_\infty(x_i)
+$$
+
+由于每个 $f_\infty(x_i)\in\{0,1\}$，因此：
+$$
+S(\mathbf{x})=
+\begin{cases}
+d, & \text{所有一维矩形函数均被激活}\\
+\leq d-1, & \text{至少一个一维矩形函数未被激活}
+\end{cases}
+$$
+
+因此，只需在 $d-1$ 处进行阈值处理，即可构造 $d$ 维超矩形函数：
+$$
+h_\infty(\mathbf{x})=
+\operatorname{ReLU}\left(
+\sum_{i=1}^{d}f_\infty(x_i)-(d-1)
+\right)
+$$
+
+结合 $f_c(x)$，可进一步写成：
+$$
+h_c(\mathbf{x})=
+\operatorname{ReLU}\left(
+\sum_{i=1}^{d}f_c(x_i)-(d-1)
+\right)
+$$
+
+当 $c\to\infty$ 时：
+$$
+h_\infty(\mathbf{x})=
+\lim_{c\to\infty}h_c(\mathbf{x})
+$$
+
+从而实现由一维矩形函数到 $d$ 维超矩形函数的构造。
+
+因此，逼近函数为
+$$f(x)=\sum_i\alpha_ih_c(x-u_i)$$
+
+令 $c\to\infty$，则能够逼近任意$L$-Lipschitz 连续函数曲面。
+
+同时，由于 $f_c(x)$ 中使用四个神经元，且在超矩形中在 $d$ 维进行求和，因此每个超矩形需要 $4d$ 神经元。因此神经元总数为 $N=4d(\frac{L}{\varepsilon})^d$
+
+### 3. 深度与广度
+通用函数逼近定理表明，应当让网络的宽度增长，从而逼近任意函数。然而，**深度分离理论**的核心观点在于，存在一种深层网络，能够高效表示特定函数。
+
+#### (1) 深度分离理论
+ReLU 神经网络是分段线性的 (PWL)。
+
+假设有一个包含多个隐藏层的深度 ReLU 网络，考虑第 $l$ 层：
+$$f_l(\mathbf{x})=\operatorname{ReLU}(\mathbf{W}_lf_{l-1}(\mathbf{x})+\mathbf{b}_l)$$
+
+令 $\operatorname{KINKS}_L$ 表示 $f_l(\mathbf{x})$ 输出 n 个坐标中转折点的最大数量，则有如下结论：
+$$\operatorname{KINKS}_L\leq2n\operatorname{KINKS}_{L-1}$$
+
+由于 $\operatorname{KINKS}_0\leq1$，因此$\operatorname{KINKS}_L\leq(2n)^L$
