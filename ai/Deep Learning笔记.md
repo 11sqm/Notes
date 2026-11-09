@@ -298,8 +298,9 @@ $$f(x)=\sum_i\alpha_ih_c(x-u_i)$$
 ### 3. 深度与广度
 通用函数逼近定理表明，应当让网络的宽度增长，从而逼近任意函数。然而，**深度分离理论**的核心观点在于，存在一种深层网络，能够高效表示特定函数。
 
-#### (1) 深度分离理论
-ReLU 神经网络是分段线性的 (PWL)。
+ReLU 神经网络是分段线性的 (PWL)。对于 PWL 函数，如果 $f$ 与 $g$ 都是 PWL，则其复合函数也必然是 PWL。同样的，其线性组合 $\alpha f+\beta g$ 也必然是 PWL。
+
+当对于函数进行加法运算时，其转折点数量最多为各函数转折点数量之和。对函数应用 ReLU 后，转折点数量最多只会翻倍。
 
 假设有一个包含多个隐藏层的深度 ReLU 网络，考虑第 $l$ 层：
 $$f_l(\mathbf{x})=\operatorname{ReLU}(\mathbf{W}_lf_{l-1}(\mathbf{x})+\mathbf{b}_l)$$
@@ -308,3 +309,8 @@ $$f_l(\mathbf{x})=\operatorname{ReLU}(\mathbf{W}_lf_{l-1}(\mathbf{x})+\mathbf{b}
 $$\operatorname{KINKS}_L\leq2n\operatorname{KINKS}_{L-1}$$
 
 由于 $\operatorname{KINKS}_0\leq1$，因此$\operatorname{KINKS}_L\leq(2n)^L$
+
+由于 n 表示宽度，L 表示深度，因此上界最多随宽度呈现多项式增长，而随深度呈指数级增长。
+
+然而，scaling law 表明，在一定的模型规模和合理的网络架构范围内，神经网络的性能主要取决于模型参数量、训练数据量和计算量，而对网络深度与宽度的具体分配相对不敏感。
+![scaling law](<scaling law.png>)
