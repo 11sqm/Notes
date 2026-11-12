@@ -310,7 +310,7 @@ $$\operatorname{KINKS}_L\leq2n\operatorname{KINKS}_{L-1}$$
 
 由于 $\operatorname{KINKS}_0\leq1$，因此$\operatorname{KINKS}_L\leq(2n)^L$
 
-由于 n 表示宽度，L 表示深度，因此上界最多随宽度呈现多项式增长，而随深度呈指数级增长。
+由于 n 表示宽度，L 表示深度，因此上界最多随宽度呈现多项式增长，而随深度呈指数级增长。由此构造出一特定函数，能够由深层函数高效表示。
 
 然而，scaling law 表明，在一定的模型规模和合理的网络架构范围内，神经网络的性能主要取决于模型参数量、训练数据量和计算量，而对网络深度与宽度的具体分配相对不敏感。
 ![scaling law](<scaling law.png>)
